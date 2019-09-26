@@ -194,32 +194,48 @@ void loop()
       xd = incoming.substring(2, str_length).toDouble();
       xe = xd - xh;
       setting = 1;
+      Serial.println("pos");
     } else if(option == "03"){
       force = incoming.substring(2, str_length).toDouble();
+      Serial.println("force");
     } else if(option == "04"){
       x_wall = incoming.substring(2, str_length).toDouble();
       walling = 1;
+      Serial.println("wall");
     } else if(option == "05"){
       walling = -1;
+      Serial.println("wall off");
+    } else if (option == "06"){
+      x_wall = incoming.substring(2, str_length).toDouble();
+      walling = 2;
+      Serial.println("dwall");
     } else if (option == "10"){
       left_LED_off();
+      Serial.println("ok");
       //left_wall(incoming.substring(1,str_length));
     } else if (option == "11"){
       left_LED_on();
+      Serial.println("ok");
     } else if (option == "20"){
-      middle_LED_off();  
+      middle_LED_off(); 
+      Serial.println("ok"); 
     } else if (option == "21"){
       middle_LED_on();  
+      Serial.println("ok");
     } else if (option == "30"){
       right_LED_off();  
+      Serial.println("ok");
     } else if (option == "31"){
       right_LED_on();
+      Serial.println("ok");
     } else if (option == "40"){
       left_LED_off();
       middle_LED_off();
       right_LED_off();
+      Serial.println("ok");
     } else if (option == "41"){
       all_LEDs_on();
+      Serial.println("ok");
     } else {
       left_LED_off();
       middle_LED_off();
@@ -228,19 +244,20 @@ void loop()
       force = 0; 
       walling = 0;
       count = 0;
+      Serial.println("reset");
     }
   }
 
   if (setting == 1){
-    xe = xd - xh;
+    xe = (xd - xh)*0.8;
     dxe = xe - xe_prev;
     ixe = ixe + xe;
     xe_prev = xe1;
-    force = xe*0.05 + dxe*0.01 + ixe*0.1; 
+    force = xe*0.01 + dxe*0.01 + ixe*0.1; 
     //Serial.println(force);
   }
   
-  if ((abs(xe) < 0.001 && abs(dxe) < 0.001) && setting == 1){
+  if ((abs(xe) < 0.0001 && abs(dxe) < 0.001) && setting == 1){
 //    Serial.println("----");
 //    Serial.println(xe);
 //    Serial.println(dxe);
@@ -255,9 +272,12 @@ void loop()
 
   if (walling == 1){
     set_wall(x_wall, xh);
+  } else if (walling == 2){
+    set_double_wall(x_wall, xh, dxh_filt);
   } else if (walling == -1){
     force = 0;  
   }
+
       
   // Define kinematic parameters you may need
   double rp = 0.005;   //[m]
@@ -357,7 +377,7 @@ void send_data(double xh, double dxh_filt_prev){
   }
 
 void set_wall(double x_wall, double xh){
-  double k_wall = 1100;
+  double k_wall = 300;
   if (x_wall > 0){
     if (xh > x_wall){
       force = k_wall*(x_wall - xh);
@@ -369,6 +389,28 @@ void set_wall(double x_wall, double xh){
   } else if (x_wall < 0){
     if (xh < x_wall){
       force = k_wall*(x_wall - xh); 
+    } else {
+      force = 0;      
+    }
+  }
+  }
+
+void set_double_wall(double x_wall, double xh, double vel){
+  double k_wall = 200;
+  double b = 27.5;
+  if (x_wall > 0){
+    if (xh > x_wall){
+      force = k_wall*(x_wall - xh);
+    } else if (xh < -x_wall){
+      force = k_wall*(-x_wall - xh);
+    } else {
+      force = 0;  
+    }
+  } else if (x_wall < 0){
+    if (xh < x_wall){
+      force = k_wall*(x_wall - xh); 
+    } else if (xh > -x_wall) { 
+      force = k_wall*(-x_wall - xh); 
     } else {
       force = 0;      
     }
